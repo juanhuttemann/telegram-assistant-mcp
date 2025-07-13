@@ -26,8 +26,8 @@
 ### Step 3: Install & Configure
 ```bash
 # Clone the project
-git clone https://github.com/your-repo/telegram-mcp-agent.git
-cd telegram-mcp-agent
+git clone https://github.com/juanhuttemann/telegram-assistant-mcp.git
+cd telegram-assistant-mcp
 
 # Install dependencies
 pip install -r requirements.txt
@@ -58,8 +58,8 @@ Edit your `claude_desktop_config.json` file:
   "mcpServers": {
     "telegram-messenger": {
       "command": "python",
-      "args": ["C:\\path\\to\\telegram-mcp-agent\\mcp_telegram_tool.py"],
-      "cwd": "C:\\path\\to\\telegram-mcp-agent"
+      "args": ["C:\\path\\to\\telegram-assistant-mcp\\mcp_telegram_tool.py"],
+      "cwd": "C:\\path\\to\\telegram-assistant-mcp"
     }
   }
 }
@@ -73,8 +73,8 @@ Add to your MCP settings:
   "mcpServers": {
     "telegram-messenger": {
       "command": "python",
-      "args": ["path/to/telegram-mcp-agent/mcp_telegram_tool.py"],
-      "cwd": "path/to/telegram-mcp-agent"
+      "args": ["path/to/telegram-assistant-mcp/mcp_telegram_tool.py"],
+      "cwd": "path/to/telegram-assistant-mcp"
     }
   }
 }
