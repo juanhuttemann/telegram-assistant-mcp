@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Any
 from mcp.types import TextContent
 from telegram.error import TelegramError
@@ -46,7 +47,6 @@ class ToolHandler:
             
             # Poll for response with timeout
             timeout = args.get("timeout", 300)
-            import time
             start_time = time.time()
             
             while time.time() - start_time < timeout:
@@ -56,6 +56,10 @@ class ToolHandler:
                     return [TextContent(type="text", text=f"✅ User approved: {args['action']}")]
                 elif status['status'] == 'denied':
                     return [TextContent(type="text", text=f"❌ User denied: {args['action']}")]
+                elif status['status'].startswith('denied_'):
+                    # Handle enhanced denial with specific instructions
+                    instruction = status.get('instruction', 'User provided specific denial instructions')
+                    return [TextContent(type="text", text=f"❌ User denied with instructions: {args['action']}\n\n{instruction}")]
                 elif status['status'] == 'pending':
                     # Wait a bit before checking again
                     await asyncio.sleep(2)
