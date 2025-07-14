@@ -156,11 +156,18 @@ class TelegramService:
         if escaped_details:
             message += f"**Details:** {escaped_details}\n"
         
-        # Create inline keyboard with approve/deny buttons
+        # Create inline keyboard with enhanced approval/denial options
         keyboard = [
             [
-                InlineKeyboardButton("✅ Approve", callback_data=f"approve_{request_id}"),
-                InlineKeyboardButton("❌ Deny", callback_data=f"deny_{request_id}")
+                InlineKeyboardButton("✅ Approve", callback_data=f"approve_{request_id}")
+            ],
+            [
+                InlineKeyboardButton("❌ Deny", callback_data=f"deny_{request_id}"),
+                InlineKeyboardButton("🔄 Deny & Suggest Alternative", callback_data=f"deny_alt_{request_id}")
+            ],
+            [
+                InlineKeyboardButton("⏸️ Deny & Pause", callback_data=f"deny_pause_{request_id}"),
+                InlineKeyboardButton("📋 Deny & Need More Info", callback_data=f"deny_info_{request_id}")
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
@@ -212,13 +219,18 @@ class TelegramService:
         
         callback_data = query.data
         
-        # Parse callback data like "approve_approval_123" or "deny_approval_123"
-        if callback_data.startswith("approve_") or callback_data.startswith("deny_"):
-            action = callback_data.split("_")[0]  # approve or deny
-            request_id = "_".join(callback_data.split("_")[1:])  # approval_123
+        # Parse callback data for first-level actions
+        if any(callback_data.startswith(prefix) for prefix in ["approve_", "deny_", "deny_alt_", "deny_pause_", "deny_info_"]):
+            parts = callback_data.split("_")
+            if callback_data.startswith("deny_alt_") or callback_data.startswith("deny_pause_") or callback_data.startswith("deny_info_"):
+                action_type = "_".join(parts[:2])  # deny_alt, deny_pause, deny_info
+                request_id = "_".join(parts[2:])  # approval_123
+            else:
+                action_type = parts[0]  # approve or deny
+                request_id = "_".join(parts[1:])  # approval_123
             
             if request_id in self.approval_responses:
-                if action == "approve":
+                if action_type == "approve":
                     self.approval_responses[request_id]['status'] = 'approved'
                     self.approval_responses[request_id]['response'] = 'approved'
                     # Escape markdown in action text
@@ -227,12 +239,146 @@ class TelegramService:
                         f"✅ **APPROVED**\n\n**Action:** {escaped_action}\n**Status:** Approved by user",
                         parse_mode="Markdown"
                     )
-                elif action == "deny":
+                elif action_type == "deny":
                     self.approval_responses[request_id]['status'] = 'denied'
                     self.approval_responses[request_id]['response'] = 'denied'
                     # Escape markdown in action text
                     escaped_action = self._escape_markdown(self.approval_responses[request_id]['action'])
                     await query.edit_message_text(
-                        f"❌ **DENIED**\n\n**Action:** {escaped_action}\n**Status:** Denied by user",
+                        f"❌ **DENIED**\n\n**Action:** {escaped_action}\n**Status:** Simple denial",
                         parse_mode="Markdown"
                     )
+                elif action_type == "deny_alt":
+                    await self._handle_deny_with_alternative(query, request_id)
+                elif action_type == "deny_pause":
+                    await self._handle_deny_with_pause(query, request_id)
+                elif action_type == "deny_info":
+                    await self._handle_deny_need_info(query, request_id)
+        
+        # Handle second-level callbacks for detailed actions
+        elif any(callback_data.startswith(prefix) for prefix in ["alt_", "pause_", "info_"]):
+            await self._handle_detailed_action(query, callback_data)
+    
+    async def _handle_deny_with_alternative(self, query, request_id: str):
+        """Handle denial with alternative suggestion request."""
+        self.approval_responses[request_id]['status'] = 'denied_alternative'
+        self.approval_responses[request_id]['response'] = 'denied_alternative'
+        
+        escaped_action = self._escape_markdown(self.approval_responses[request_id]['action'])
+        
+        # Show options for alternative suggestions
+        keyboard = [
+            [
+                InlineKeyboardButton("💡 Try different approach", callback_data=f"alt_approach_{request_id}"),
+                InlineKeyboardButton("🔍 Need more details", callback_data=f"alt_details_{request_id}")
+            ],
+            [
+                InlineKeyboardButton("⏰ Try again later", callback_data=f"alt_later_{request_id}"),
+                InlineKeyboardButton("✏️ Custom instruction", callback_data=f"alt_custom_{request_id}")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            f"🔄 **DENIED - SUGGEST ALTERNATIVE**\n\n**Action:** {escaped_action}\n\n**Choose what you'd like the agent to do instead:**",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+    
+    async def _handle_deny_with_pause(self, query, request_id: str):
+        """Handle denial with pause instruction."""
+        self.approval_responses[request_id]['status'] = 'denied_pause'
+        self.approval_responses[request_id]['response'] = 'denied_pause'
+        
+        escaped_action = self._escape_markdown(self.approval_responses[request_id]['action'])
+        
+        # Show pause duration options
+        keyboard = [
+            [
+                InlineKeyboardButton("⏰ Pause 30 minutes", callback_data=f"pause_30m_{request_id}"),
+                InlineKeyboardButton("🕐 Pause 1 hour", callback_data=f"pause_1h_{request_id}")
+            ],
+            [
+                InlineKeyboardButton("📅 Pause until tomorrow", callback_data=f"pause_tomorrow_{request_id}"),
+                InlineKeyboardButton("🛑 Stop completely", callback_data=f"pause_stop_{request_id}")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            f"⏸️ **DENIED - PAUSE REQUESTED**\n\n**Action:** {escaped_action}\n\n**How long should the agent pause this task?**",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+    
+    async def _handle_deny_need_info(self, query, request_id: str):
+        """Handle denial requesting more information."""
+        self.approval_responses[request_id]['status'] = 'denied_need_info'
+        self.approval_responses[request_id]['response'] = 'denied_need_info'
+        
+        escaped_action = self._escape_markdown(self.approval_responses[request_id]['action'])
+        
+        # Show information request options
+        keyboard = [
+            [
+                InlineKeyboardButton("🔍 What are the risks?", callback_data=f"info_risks_{request_id}"),
+                InlineKeyboardButton("💰 What's the cost?", callback_data=f"info_cost_{request_id}")
+            ],
+            [
+                InlineKeyboardButton("⏱️ How long will it take?", callback_data=f"info_time_{request_id}"),
+                InlineKeyboardButton("🎯 Show me alternatives", callback_data=f"info_alternatives_{request_id}")
+            ],
+            [
+                InlineKeyboardButton("📊 Give me more context", callback_data=f"info_context_{request_id}")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await query.edit_message_text(
+            f"📋 **DENIED - NEED MORE INFO**\n\n**Action:** {escaped_action}\n\n**What information do you need?**",
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
+    
+    async def _handle_detailed_action(self, query, callback_data: str):
+        """Handle detailed action callbacks from denial follow-ups."""
+        parts = callback_data.split("_")
+        action_category = parts[0]  # alt, pause, info
+        action_detail = parts[1]    # approach, details, later, etc.
+        request_id = "_".join(parts[2:])  # approval_123
+        
+        if request_id not in self.approval_responses:
+            return
+        
+        escaped_action = self._escape_markdown(self.approval_responses[request_id]['action'])
+        
+        # Generate specific responses based on the detailed action
+        response_messages = {
+            "alt_approach": "💡 **INSTRUCTION:** Try a different approach to accomplish this task",
+            "alt_details": "🔍 **INSTRUCTION:** Gather more details before proceeding with this action",
+            "alt_later": "⏰ **INSTRUCTION:** Try this action again later when conditions may be better",
+            "alt_custom": "✏️ **INSTRUCTION:** Waiting for custom instructions (please send a follow-up message)",
+            "pause_30m": "⏰ **INSTRUCTION:** Pause this task for 30 minutes, then reassess",
+            "pause_1h": "🕐 **INSTRUCTION:** Pause this task for 1 hour, then reassess", 
+            "pause_tomorrow": "📅 **INSTRUCTION:** Pause this task until tomorrow",
+            "pause_stop": "🛑 **INSTRUCTION:** Stop this task completely and move on",
+            "info_risks": "🔍 **INSTRUCTION:** Provide detailed risk analysis before proceeding",
+            "info_cost": "💰 **INSTRUCTION:** Provide cost estimation before proceeding",
+            "info_time": "⏱️ **INSTRUCTION:** Provide time estimation before proceeding",
+            "info_alternatives": "🎯 **INSTRUCTION:** Research and present alternative approaches",
+            "info_context": "📊 **INSTRUCTION:** Provide more context and background information"
+        }
+        
+        instruction_key = f"{action_category}_{action_detail}"
+        instruction = response_messages.get(instruction_key, "❓ **INSTRUCTION:** Custom action requested")
+        
+        # Update the approval response with the detailed instruction
+        self.approval_responses[request_id]['status'] = f'denied_{instruction_key}'
+        self.approval_responses[request_id]['response'] = instruction_key
+        self.approval_responses[request_id]['instruction'] = instruction
+        
+        # Show final result to user
+        await query.edit_message_text(
+            f"**DENIAL PROCESSED**\n\n**Original Action:** {escaped_action}\n\n{instruction}\n\n**Status:** Instructions provided to agent",
+            parse_mode="Markdown"
+        )
