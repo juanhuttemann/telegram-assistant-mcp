@@ -5,8 +5,8 @@
 ## ✨ What Does This Do?
 
 - 📱 **Get notified** when your AI agent is working on tasks
-- 🤔 **Approve or deny** actions with enhanced options (simple buttons - no typing!)
-- 🔄 **Smart denials** - provide alternatives, pause requests, or ask for more info
+- 🤔 **Approve or deny** actions with 3 simple buttons (no typing needed!)
+- 🔄 **Smart alternatives** - provide custom instructions when you want a different approach
 - 📊 **Track progress** of long-running operations
 - 🔔 **Receive alerts** with different priority levels
 - ✅ **Stay in control** of what your AI agent does
@@ -40,9 +40,9 @@ cp .env.example .env
 
 ### Step 4: Test It Works
 ```bash
-python test_telegram_service.py
+python run_tests.py
 ```
-You should receive test messages in Telegram!
+Select option 1 for a quick test. You should receive test messages in Telegram!
 
 ## 🔧 Connect to Your AI Assistant
 
@@ -92,10 +92,10 @@ Once connected, your AI assistant can:
    - "✅ **SUCCESS** - Tests passed!"
    - "❌ **ERROR** - Build failed"
 
-2. **Request approval with enhanced options:**
+2. **Request approval with simple options:**
    - "🤔 **APPROVAL REQUIRED** - Delete old files?"
-   - Click: ✅ Approve | ❌ Deny | 🔄 Suggest Alternative | ⏸️ Pause | 📋 Need More Info
-   - Get detailed follow-up options for smart denials
+   - Click: ✅ Approve | ❌ Deny | 🔄 Suggest Different Approach
+   - Provide custom instructions when suggesting alternatives
 
 3. **Send notifications:**
    - "🔔 Task completed successfully!"
@@ -103,56 +103,213 @@ Once connected, your AI assistant can:
 
 ## 🛠️ Available Tools
 
-| Tool | Description | Example |
-|------|-------------|----------|
-| `notify_progress` | Send progress updates with status | "🔄 **WORKING** - Processing data..." |
-| `request_approval` | Ask for user approval with enhanced denial options | "🤔 **APPROVAL REQUIRED** - Deploy to production?" |
-| `send_notification` | Send general notifications | "🔔 Task completed successfully!" |
+| Tool | Description | Timeout | Persistence |
+|------|-------------|---------|-------------|
+| `notify_progress` | Send progress updates with status emojis | Instant | No |
+| `request_approval` | Ask for approval with 3 buttons + custom instructions | 30 min | Only custom instructions |
+| `send_notification` | Send notifications with priority levels | Instant | No |
+| `check_approval_status` | Check status of pending approval by request ID | Instant | From database |
 
-## 🎯 Enhanced Approval System
+## 🎯 Simple Approval System
 
-When your AI requests approval, you get **5 smart options** instead of just approve/deny:
+When your AI requests approval, you get **3 clear options**:
 
-### Primary Options:
-- **✅ Approve** - Standard approval
-- **❌ Deny** - Simple denial  
-- **🔄 Deny & Suggest Alternative** - Request different approach
-- **⏸️ Deny & Pause** - Temporarily pause the task
-- **📋 Deny & Need More Info** - Request additional details
+### Approval Options:
+- **✅ Approve** - Standard approval, proceed with the action
+- **❌ Deny** - Simple denial, don't proceed  
+- **🔄 Suggest Different Approach** - Provide custom instructions for alternative method
 
-### Smart Follow-ups:
-When you choose enhanced denial options, you get specific choices:
+### How it Works:
+1. **✅ Approve** - Immediate approval, agent proceeds
+2. **❌ Deny** - Immediate denial, agent stops 
+3. **🔄 Suggest Different Approach** - You type custom instructions, agent receives your specific guidance
 
-**🔄 Suggest Alternative:**
-- 💡 Try different approach
-- 🔍 Gather more details first
-- ⏰ Try again later
-- ✏️ Custom instruction
+**Workflow for Custom Instructions:**
+- Click "🔄 Suggest Different Approach"  
+- System asks you to type your suggestion
+- You type: "do this like that" or any specific instruction
+- Agent receives: "❌ User denied with custom instructions: [your text]"
+- Your instruction persists across tool calls until handled
 
-**⏸️ Pause Options:**
-- ⏰ Pause 30 minutes
-- 🕐 Pause 1 hour  
-- 📅 Pause until tomorrow
-- 🛑 Stop completely
+**Example Custom Instructions:**
+- "Try using a different API endpoint instead"
+- "Use a safer approach with backup first" 
+- "Get user confirmation before proceeding"
+- "Try this during off-peak hours"
 
-**📋 More Info:**
-- 🔍 What are the risks?
-- 💰 What's the cost?
-- ⏱️ How long will it take?
-- 🎯 Show alternatives
-- 📊 Provide more context
+## 🤖 Sample Agent Prompts
 
-The AI receives detailed instructions like: *"💡 Try a different approach to accomplish this task"* or *"🔍 Provide detailed risk analysis before proceeding"*
+### For Testing (Use Everything):
+```
+You are a helpful AI assistant with Telegram integration for real-time communication and approval workflows. 
 
-## 🤖 Sample Agent Prompt
+TELEGRAM COMMUNICATION REQUIREMENTS:
+- Send progress updates for EVERY task using notify_progress (started, in_progress, completed, error)
+- Request approval via Telegram before ANY action that: creates/modifies files, installs packages, makes API calls, changes configurations, accesses external services, or could impact the system
+- Send notifications for important events, warnings, completions, and status changes
+- Use different priority levels (low, normal, high, urgent) based on importance
 
-Add this simple instruction to your AI prompts to get the most out of Telegram integration:
+APPROVAL WORKFLOW:
+- Always explain what you want to do and why approval is needed
+- Wait for user response via Telegram buttons (Approve/Deny/Suggest Different Approach)
+- If denied with custom instructions, follow the user's alternative approach
+- Use 30-minute timeout for realistic response times
 
+TESTING FOCUS:
+Be extremely proactive with Telegram communication - use all notification types, request approvals frequently, and demonstrate the full approval workflow including custom instruction handling. This helps test the complete Telegram MCP integration.
+
+Your goal is to be helpful while showcasing all Telegram features through natural workflow integration.
+```
+
+### For Production (Balanced):
 ```
 KEEP ME UPDATED VIA TELEGRAM: Send me progress updates for long tasks, ask for my approval before risky actions (like deleting files, deploying, or spending money), and notify me when important things happen. Use the Telegram tools to stay in touch!
 ```
 
-**That's it!** Your AI will automatically use Telegram to communicate with you throughout any task.
+### For Critical Systems (Maximum Safety):
+```
+TELEGRAM APPROVAL REQUIRED: Ask for my approval via Telegram before ANY file modification, system change, API call, or potentially impactful action. Send detailed progress updates and notify me immediately of any errors or warnings. Safety first!
+```
+
+**Pick the style that matches your needs!**
+
+## 🧪 Testing
+
+The project includes comprehensive tests to verify all Telegram MCP functionality. All tests are located in the `tests/` directory.
+
+### Available Tests
+
+#### 1. **Basic Feature Test** (`test_all_features.py`)
+Quick test of core functionality - suitable for development and basic verification.
+
+**What it tests:**
+- Progress notifications (all status types)
+- Regular notifications (all priority levels)  
+- One approval request with 30-second timeout:
+  - ✅ **"Pet a cute cat"** (test any button you want)
+
+**How to run:**
+```bash
+cd telegram-assistant-mcp
+python tests/test_all_features.py
+```
+
+**Expected outcome:**
+- Several notification messages appear in your Telegram
+- One approval request appears
+- Test waits 30 seconds for you to click any button
+- Test completes regardless of your response (~40 seconds total)
+
+#### 2. **Interactive Approval Test** (`test_telegram_service.py`)
+Comprehensive test requiring manual interaction - tests the complete approval workflow.
+
+**What it tests:**
+- All notification types with realistic scenarios
+- Complete 3-button approval workflow:
+  - ✅ **Approve** scenario: "Pet a cute cat"
+  - ❌ **Deny** scenario: "Wipe entire disk permanently" 
+  - 🔄 **Suggest Different Approach**: "Deploy directly to production on Friday at 5PM"
+- Custom instruction workflow
+- Database persistence across service instances
+- Error handling
+
+**How to run:**
+```bash
+cd telegram-assistant-mcp
+python tests/test_telegram_service.py
+```
+
+**What to expect:**
+1. **Automatic tests** (progress + regular notifications)
+2. **Manual interaction required** - you'll see prompts like:
+   ```
+   ============================================================
+   WAITING FOR YOUR ACTION IN TELEGRAM:
+   1. Check your Telegram for the approval request
+   2. This is something nice - you should APPROVE it
+   3. Click the 'Approve' button (green checkmark)
+   ============================================================
+   ```
+3. **Three approval scenarios** - each waits 60 seconds for your response
+4. **Database persistence verification**
+5. **Complete test takes ~5 minutes** (depending on your response time)
+
+### Testing Instructions
+
+#### Before Running Tests
+
+1. **Ensure your bot is configured:**
+   ```bash
+   # Check your .env file has:
+   TELEGRAM_BOT_TOKEN=your_bot_token
+   TELEGRAM_CHAT_ID=your_chat_id
+   ```
+
+2. **Make sure you can receive messages:**
+   - Start a chat with your bot in Telegram
+   - Send `/start` or any message to activate the chat
+
+#### During Interactive Tests
+
+**For the "Pet a cute cat" request:**
+- Click ✅ **Approve** (this tests direct approval)
+
+**For the "Wipe entire disk permanently" request:**
+- Click ❌ **Deny** (this tests direct denial)
+
+**For the "Deploy directly to production on Friday at 5PM" request:**
+- Click 🔄 **Suggest Different Approach** 
+- When prompted, type a better suggestion like:
+  - "Deploy to staging first, then production Monday morning"
+  - "Run tests before deploying"
+  - "Deploy during maintenance window"
+
+#### Test Results
+
+**Success indicators:**
+- `[PASS]` messages for each test phase
+- `[RESULT]` messages showing detected actions
+- Database persistence working message
+- No `[FAIL]` or `[TIMEOUT]` messages
+
+**Common issues:**
+- `[TIMEOUT]` - You didn't respond within 60 seconds
+- `[FAIL]` - Technical issue (check your bot token/chat ID)
+- Unicode errors - Usually harmless display issues on Windows
+
+### Quick Test Runner
+
+Use the interactive test runner for easy test selection:
+
+```bash
+cd telegram-assistant-mcp
+python run_tests.py
+```
+
+This gives you options to:
+- Run basic test only (quick, automated)
+- Run interactive test only (comprehensive, manual)
+- Run all tests
+- Exit
+
+### Automated Testing
+
+For CI/CD or automated testing, use the basic feature test:
+
+```bash
+# Quick automated test (no user interaction)
+python tests/test_all_features.py
+
+# Check if service initializes correctly
+python -c "from telegram_service import TelegramService; TelegramService(); print('OK')"
+```
+
+### Test Database
+
+- Tests use the same `approval_responses.db` as production
+- Database is cleaned on each service initialization
+- Custom instructions are persisted between test runs
+- You can safely delete the `.db` file to reset test state
 
 ## 🐛 Troubleshooting
 

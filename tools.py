@@ -24,7 +24,7 @@ def get_tools() -> list[Tool]:
         ),
         Tool(
             name="request_approval",
-            description="Request user approval before proceeding with an action and wait for response. Users can approve, deny, or provide specific denial instructions (alternative approaches, pause requests, or request more information).",
+            description="Request user approval before proceeding with an action and wait for response. Users get 3 options: Approve, Deny, or Suggest Different Approach (with custom instructions). Default timeout is 30 minutes to allow realistic response times.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -43,8 +43,8 @@ def get_tools() -> list[Tool]:
                     },
                     "timeout": {
                         "type": "integer",
-                        "description": "Timeout in seconds to wait for response (default: 300)",
-                        "default": 300
+                        "description": "Timeout in seconds to wait for response (default: 1800 - 30 minutes)",
+                        "default": 1800
                     }
                 },
                 "required": ["action"]
@@ -68,6 +68,20 @@ def get_tools() -> list[Tool]:
                     }
                 },
                 "required": ["message"]
+            }
+        ),
+        Tool(
+            name="check_approval_status",
+            description="Check the status of a pending approval request by ID",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "description": "The approval request ID to check"
+                    }
+                },
+                "required": ["request_id"]
             }
         )
     ]
