@@ -24,7 +24,7 @@ def get_tools() -> list[Tool]:
         ),
         Tool(
             name="request_approval",
-            description="Request user approval before proceeding with an action and wait for response",
+            description="Request user approval before proceeding with an action and wait for response. Users can approve, deny, or provide specific denial instructions (alternative approaches, pause requests, or request more information).",
             inputSchema={
                 "type": "object",
                 "properties": {
