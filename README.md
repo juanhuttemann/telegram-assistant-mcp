@@ -46,7 +46,7 @@ Select option 1 for a quick test. You should receive test messages in Telegram!
 
 ## 🔧 Connect to Your AI Assistant
 
-To use this with your AI assistant (Claude, Cursor, VS Code, etc.), add this configuration:
+To use this with your AI assistant, add this configuration:
 
 ### For Claude Desktop
 Edit your `claude_desktop_config.json` file:
@@ -57,31 +57,100 @@ Edit your `claude_desktop_config.json` file:
 ```json
 {
   "mcpServers": {
-    "telegram-messenger": {
+    "telegram-assistant": {
       "command": "python",
       "args": ["C:\\path\\to\\telegram-assistant-mcp\\mcp_telegram_tool.py"],
-      "cwd": "C:\\path\\to\\telegram-assistant-mcp"
+      "cwd": "C:\\path\\to\\telegram-assistant-mcp",
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_bot_token_here",
+        "TELEGRAM_CHAT_ID": "your_chat_id_here"
+      }
     }
   }
 }
 ```
 
-### For Cursor/VS Code
-Add to your MCP settings:
+### For Claude Code
+Add to your MCP settings or use environment variables:
 
 ```json
 {
   "mcpServers": {
-    "telegram-messenger": {
+    "telegram-assistant": {
       "command": "python",
       "args": ["path/to/telegram-assistant-mcp/mcp_telegram_tool.py"],
-      "cwd": "path/to/telegram-assistant-mcp"
+      "cwd": "path/to/telegram-assistant-mcp",
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_bot_token_here",
+        "TELEGRAM_CHAT_ID": "your_chat_id_here"
+      }
     }
   }
 }
 ```
 
-**📝 Note:** Replace the path with your actual project location!
+### For Cursor
+Add to your MCP settings in Cursor preferences:
+
+```json
+{
+  "mcpServers": {
+    "telegram-assistant": {
+      "command": "python",
+      "args": ["path/to/telegram-assistant-mcp/mcp_telegram_tool.py"],
+      "cwd": "path/to/telegram-assistant-mcp",
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_bot_token_here",
+        "TELEGRAM_CHAT_ID": "your_chat_id_here"
+      }
+    }
+  }
+}
+```
+
+### For VS Code (with MCP extension)
+Add to your VS Code MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "telegram-assistant": {
+      "command": "python",
+      "args": ["path/to/telegram-assistant-mcp/mcp_telegram_tool.py"],
+      "cwd": "path/to/telegram-assistant-mcp",
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_bot_token_here",
+        "TELEGRAM_CHAT_ID": "your_chat_id_here"
+      }
+    }
+  }
+}
+```
+
+### For Cline (VS Code Extension)
+Add to your Cline MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "telegram-assistant": {
+      "command": "python",
+      "args": ["path/to/telegram-assistant-mcp/mcp_telegram_tool.py"],
+      "cwd": "path/to/telegram-assistant-mcp",
+      "env": {
+        "TELEGRAM_BOT_TOKEN": "your_bot_token_here",
+        "TELEGRAM_CHAT_ID": "your_chat_id_here"
+      }
+    }
+  }
+}
+```
+
+**📝 Notes:**
+- Replace `path/to/telegram-assistant-mcp` with your actual project location
+- Replace `your_bot_token_here` and `your_chat_id_here` with your actual values
+- Alternatively, set these as system environment variables instead of in the config
+- For Windows paths, use double backslashes or forward slashes
 
 ## 🎯 How Your AI Will Use This
 
