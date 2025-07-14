@@ -129,3 +129,6 @@ public
 # Temporary folders
 tmp/
 temp/
+
+# Claude Code
+.Claude

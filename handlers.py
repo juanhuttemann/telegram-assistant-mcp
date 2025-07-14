@@ -66,11 +66,11 @@ class ToolHandler:
             return [TextContent(type="text", text=f"⏰ Approval request timed out for: {args['action']} (ID: {request_id})")]
         else:
             # Just send the request without waiting
-            result = await self.telegram.send_approval_request(
+            request_id = await self.telegram.create_approval_request(
                 action=args["action"],
                 details=args.get("details", "")
             )
-            return [TextContent(type="text", text=result)]
+            return [TextContent(type="text", text=f"Approval request sent (ID: {request_id})")]
 
     async def _handle_notification(self, args: dict[str, Any]) -> list[TextContent]:
         """Handle general notification."""

@@ -1,22 +1,29 @@
-from telegram import Bot, Update
-from telegram.ext import Application, MessageHandler, filters
+from telegram import Bot, Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, MessageHandler, CallbackQueryHandler, filters
 from config import TOKEN, CHAT_ID, STATUS_EMOJIS, PRIORITY_EMOJIS
 import asyncio
+import time
 
 class TelegramService:
     def __init__(self):
         self.bot = Bot(token=TOKEN)
         self.chat_id = CHAT_ID
-        self.last_approval_response = None
         self.pending_approvals = {}
         self.approval_responses = {}
         self.app = None
         self._listening_started = False
+    
+    def _escape_markdown(self, text: str) -> str:
+        """Escape markdown characters to prevent parsing errors."""
+        return text.replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace('`', '\\`')
 
     async def send_progress(self, message: str, status: str) -> str:
         """Send progress notification with status emoji."""
         emoji = STATUS_EMOJIS.get(status, "📝")
-        formatted_message = f"{emoji} **{status.upper()}**\n{message}"
+        # Escape markdown characters in user message and status to prevent parsing errors
+        escaped_message = self._escape_markdown(message)
+        escaped_status = self._escape_markdown(status.upper())
+        formatted_message = f"{emoji} **{escaped_status}**\n{escaped_message}"
         
         await self.bot.send_message(
             chat_id=self.chat_id,
@@ -25,19 +32,6 @@ class TelegramService:
         )
         return f"Progress notification sent: {status} - {message}"
 
-    async def send_approval_request(self, action: str, details: str = "") -> str:
-        """Send approval request to user."""
-        message = f"🤔 **APPROVAL REQUIRED**\n\n**Action:** {action}\n"
-        if details:
-            message += f"**Details:** {details}\n"
-        message += "\nPlease respond with 'approve' or 'deny' to proceed."
-        
-        await self.bot.send_message(
-            chat_id=self.chat_id,
-            text=message,
-            parse_mode="Markdown"
-        )
-        return f"Approval request sent for: {action}"
 
     async def send_notification(self, message: str, priority: str = "normal") -> str:
         """Send general notification with priority emoji."""
@@ -52,12 +46,11 @@ class TelegramService:
 
     async def send_approval_request_and_wait(self, action: str, details: str = "", timeout: int = 300) -> str:
         """Send approval request and wait for user response."""
-        # Send the approval request
-        await self.send_approval_request(action, details)
-        
         # Create a unique request ID
-        import time
         request_id = str(int(time.time()))
+        
+        # Send approval request with buttons
+        await self._send_approval_with_buttons(action, details, request_id)
         
         # Create an event to wait for response
         response_event = asyncio.Event()
@@ -68,8 +61,8 @@ class TelegramService:
         }
         
         # Start listening for messages if not already started
-        if not self.app:
-            await self._start_listening()
+        if not self._listening_started:
+            await self._ensure_listening()
         
         try:
             # Wait for response with timeout
@@ -89,21 +82,6 @@ class TelegramService:
             await self.send_notification(f"⏰ Approval request for '{action}' timed out.", "high")
             return "timeout"
     
-    async def _start_listening(self):
-        """Start listening for Telegram messages."""
-        self.app = Application.builder().token(TOKEN).build()
-        
-        # Add message handler
-        self.app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, self._handle_message))
-        
-        # Start the application in a background task
-        asyncio.create_task(self._run_bot())
-    
-    async def _run_bot(self):
-        """Run the bot polling in background."""
-        await self.app.initialize()
-        await self.app.start()
-        await self.app.updater.start_polling()
     
     async def _handle_message(self, update: Update, context):
         """Handle incoming messages."""
@@ -126,7 +104,6 @@ class TelegramService:
             await self._ensure_listening()
         
         # Create unique request ID
-        import time
         request_id = f"approval_{int(time.time() * 1000)}"
         
         # Store request
@@ -138,16 +115,8 @@ class TelegramService:
             'timestamp': time.time()
         }
         
-        # Send the approval request
-        message = f"🤔 APPROVAL REQUIRED (ID: {request_id})\n\nAction: {action}\n"
-        if details:
-            message += f"Details: {details}\n"
-        message += f"\nPlease respond with 'approve {request_id}' or 'deny {request_id}' to proceed."
-        
-        await self.bot.send_message(
-            chat_id=self.chat_id,
-            text=message
-        )
+        # Send the approval request with inline buttons
+        await self._send_approval_with_buttons(action, details, request_id)
         
         return request_id
     
@@ -162,19 +131,46 @@ class TelegramService:
         if not self._listening_started:
             self.app = Application.builder().token(TOKEN).build()
             self.app.add_handler(MessageHandler(filters.TEXT & filters.ChatType.PRIVATE, self._handle_approval_response))
+            self.app.add_handler(CallbackQueryHandler(self._handle_button_callback))
             
             # Start the application in background
-            asyncio.create_task(self._run_approval_bot())
+            asyncio.create_task(self._run_bot())
             self._listening_started = True
     
-    async def _run_approval_bot(self):
-        """Run the approval bot in background."""
+    async def _run_bot(self):
+        """Run the bot polling in background."""
         try:
             await self.app.initialize()
             await self.app.start()
             await self.app.updater.start_polling()
         except Exception as e:
             print(f"Bot error: {e}")
+    
+    async def _send_approval_with_buttons(self, action: str, details: str, request_id: str):
+        """Send approval request with inline buttons."""
+        # Escape markdown characters in user input
+        escaped_action = self._escape_markdown(action)
+        escaped_details = self._escape_markdown(details) if details else ""
+        
+        message = f"🤔 **APPROVAL REQUIRED**\n\n**Action:** {escaped_action}\n"
+        if escaped_details:
+            message += f"**Details:** {escaped_details}\n"
+        
+        # Create inline keyboard with approve/deny buttons
+        keyboard = [
+            [
+                InlineKeyboardButton("✅ Approve", callback_data=f"approve_{request_id}"),
+                InlineKeyboardButton("❌ Deny", callback_data=f"deny_{request_id}")
+            ]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        
+        await self.bot.send_message(
+            chat_id=self.chat_id,
+            text=message,
+            parse_mode="Markdown",
+            reply_markup=reply_markup
+        )
     
     async def _handle_approval_response(self, update: Update, context):
         """Handle approval responses."""
@@ -205,3 +201,38 @@ class TelegramService:
                 approval_data['response'] = message_text.lower()
                 approval_data['event'].set()
                 break
+    
+    async def _handle_button_callback(self, update: Update, context):
+        """Handle inline button callbacks for approval requests."""
+        query = update.callback_query
+        await query.answer()
+        
+        if query.from_user.id != self.chat_id:
+            return
+        
+        callback_data = query.data
+        
+        # Parse callback data like "approve_approval_123" or "deny_approval_123"
+        if callback_data.startswith("approve_") or callback_data.startswith("deny_"):
+            action = callback_data.split("_")[0]  # approve or deny
+            request_id = "_".join(callback_data.split("_")[1:])  # approval_123
+            
+            if request_id in self.approval_responses:
+                if action == "approve":
+                    self.approval_responses[request_id]['status'] = 'approved'
+                    self.approval_responses[request_id]['response'] = 'approved'
+                    # Escape markdown in action text
+                    escaped_action = self._escape_markdown(self.approval_responses[request_id]['action'])
+                    await query.edit_message_text(
+                        f"✅ **APPROVED**\n\n**Action:** {escaped_action}\n**Status:** Approved by user",
+                        parse_mode="Markdown"
+                    )
+                elif action == "deny":
+                    self.approval_responses[request_id]['status'] = 'denied'
+                    self.approval_responses[request_id]['response'] = 'denied'
+                    # Escape markdown in action text
+                    escaped_action = self._escape_markdown(self.approval_responses[request_id]['action'])
+                    await query.edit_message_text(
+                        f"❌ **DENIED**\n\n**Action:** {escaped_action}\n**Status:** Denied by user",
+                        parse_mode="Markdown"
+                    )
