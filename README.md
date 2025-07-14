@@ -5,7 +5,8 @@
 ## ✨ What Does This Do?
 
 - 📱 **Get notified** when your AI agent is working on tasks
-- 🤔 **Approve or deny** actions before they happen
+- 🤔 **Approve or deny** actions with enhanced options (simple buttons - no typing!)
+- 🔄 **Smart denials** - provide alternatives, pause requests, or ask for more info
 - 📊 **Track progress** of long-running operations
 - 🔔 **Receive alerts** with different priority levels
 - ✅ **Stay in control** of what your AI agent does
@@ -91,9 +92,10 @@ Once connected, your AI assistant can:
    - "✅ **SUCCESS** - Tests passed!"
    - "❌ **ERROR** - Build failed"
 
-2. **Request approval before actions:**
+2. **Request approval with enhanced options:**
    - "🤔 **APPROVAL REQUIRED** - Delete old files?"
-   - You reply: "approve" or "deny"
+   - Click: ✅ Approve | ❌ Deny | 🔄 Suggest Alternative | ⏸️ Pause | 📋 Need More Info
+   - Get detailed follow-up options for smart denials
 
 3. **Send notifications:**
    - "🔔 Task completed successfully!"
@@ -104,8 +106,53 @@ Once connected, your AI assistant can:
 | Tool | Description | Example |
 |------|-------------|----------|
 | `notify_progress` | Send progress updates with status | "🔄 **WORKING** - Processing data..." |
-| `request_approval` | Ask for user approval | "🤔 **APPROVAL REQUIRED** - Deploy to production?" |
+| `request_approval` | Ask for user approval with enhanced denial options | "🤔 **APPROVAL REQUIRED** - Deploy to production?" |
 | `send_notification` | Send general notifications | "🔔 Task completed successfully!" |
+
+## 🎯 Enhanced Approval System
+
+When your AI requests approval, you get **5 smart options** instead of just approve/deny:
+
+### Primary Options:
+- **✅ Approve** - Standard approval
+- **❌ Deny** - Simple denial  
+- **🔄 Deny & Suggest Alternative** - Request different approach
+- **⏸️ Deny & Pause** - Temporarily pause the task
+- **📋 Deny & Need More Info** - Request additional details
+
+### Smart Follow-ups:
+When you choose enhanced denial options, you get specific choices:
+
+**🔄 Suggest Alternative:**
+- 💡 Try different approach
+- 🔍 Gather more details first
+- ⏰ Try again later
+- ✏️ Custom instruction
+
+**⏸️ Pause Options:**
+- ⏰ Pause 30 minutes
+- 🕐 Pause 1 hour  
+- 📅 Pause until tomorrow
+- 🛑 Stop completely
+
+**📋 More Info:**
+- 🔍 What are the risks?
+- 💰 What's the cost?
+- ⏱️ How long will it take?
+- 🎯 Show alternatives
+- 📊 Provide more context
+
+The AI receives detailed instructions like: *"💡 Try a different approach to accomplish this task"* or *"🔍 Provide detailed risk analysis before proceeding"*
+
+## 🤖 Sample Agent Prompt
+
+Add this simple instruction to your AI prompts to get the most out of Telegram integration:
+
+```
+KEEP ME UPDATED VIA TELEGRAM: Send me progress updates for long tasks, ask for my approval before risky actions (like deleting files, deploying, or spending money), and notify me when important things happen. Use the Telegram tools to stay in touch!
+```
+
+**That's it!** Your AI will automatically use Telegram to communicate with you throughout any task.
 
 ## 🐛 Troubleshooting
 
